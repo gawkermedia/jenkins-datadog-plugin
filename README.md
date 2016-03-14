@@ -27,8 +27,10 @@ These are optional tags that can be included in all events, metrics, and service
 ## Customization
 Currently we allow you the ability to blacklist any jobs which you do not want to have events, metrics, and service checks reported for.
 
+Since version 0.5.0 you can add custom tags to any jobs as a property and those tags can contain environment variables and build parameters. For example: `application:${JOB_NAME} type:build`
+
 ## Installation
-_This plugin requires [Jenkins 1.580.1](http://updates.jenkins-ci.org/download/war/1.580.1/jenkins.war) or newer._
+_This plugin requires [Jenkins 1.637](http://updates.jenkins-ci.org/download/war/1.637/jenkins.war) or newer._
 
 This plugin can be installed from the [Update Center](https://wiki.jenkins-ci.org/display/JENKINS/Plugins#Plugins-Howtoinstallplugins) (found at `Manage Jenkins -> Manage Plugins`) in your Jenkins installation. Select the `Available` tab, search for `Datadog` and look for `Datadog Plugin`. Once you find it, check the checkbox next to it, and install via your preference by using one of the two install buttons at the bottom of the screen. Check to see that the plugin has been successfully installed by searching for `Datadog Plugin` on the `Installed` tab. If the plugin has been successfully installed, then continue on to the configuration step, described below.
 
