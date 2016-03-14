@@ -1,6 +1,8 @@
+// vim: set ts=2 softtabstop=2 sw=2 expandtab :
 package org.datadog.jenkins.plugins.datadog;
 
 import static hudson.Util.fixEmptyAndTrim;
+import org.apache.commons.lang3.text.StrSubstitutor;
 
 import hudson.EnvVars;
 import hudson.Extension;
@@ -8,6 +10,8 @@ import hudson.ProxyConfiguration;
 import hudson.model.AbstractProject;
 import hudson.model.Describable;
 import hudson.model.Descriptor;
+import hudson.model.JobProperty;
+import hudson.model.JobPropertyDescriptor;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.model.listeners.RunListener;
@@ -34,6 +38,7 @@ import java.net.Proxy;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -87,6 +92,29 @@ public class DatadogBuildListener extends RunListener<Run>
   public DatadogBuildListener() { }
 
   /**
+   * Reads datadog tag property and expanding environment variables in it.
+   * {@see DatadogJobProperty}
+   *
+   * @param run - A Run object representing a particular execution of Job.
+   * @param env - The current environment variables.
+   */
+  private final String jobTags(final Run run, EnvVars env) {
+    String tags = "";
+    Map<JobPropertyDescriptor, JobProperty> propertyMap = run.getParent().getProperties();
+
+    for (JobProperty jobProperty : propertyMap.values()) {
+      if (jobProperty.getClass() == DatadogJobProperty.class) {
+        DatadogJobProperty datadogProperty = (DatadogJobProperty) jobProperty;
+        if (datadogProperty.getTags() != null && datadogProperty.getTags() != "") {
+          tags = new StrSubstitutor(env).replace(datadogProperty.getTags());
+        }
+      }
+    }
+
+    return tags;
+  }
+
+  /**
    * Called when a build is first started.
    *
    * @param run - A Run object representing a particular execution of Job.
@@ -124,6 +152,9 @@ public class DatadogBuildListener extends RunListener<Run>
 
       // Add event_type to assist in roll-ups
       builddata.put("event_type", "build start"); // string
+
+      // custom job tags
+      builddata.put("job_tags", jobTags(run, envVars)); // string
 
       event(builddata);
     }
@@ -201,6 +232,8 @@ public class DatadogBuildListener extends RunListener<Run>
     } else if ( envVars.get("CVS_BRANCH") != null ) {
       builddata.put("branch", envVars.get("CVS_BRANCH")); // string
     }
+    // custom job tags
+    builddata.put("job_tags", jobTags(run, envVars)); // string
 
     return builddata;
   }
@@ -224,6 +257,13 @@ public class DatadogBuildListener extends RunListener<Run>
     }
     if ( builddata.get("branch") != null ) {
       tags.add("branch:" + builddata.get("branch"));
+    }
+
+    // custom job tags
+    if ( builddata.get("job_tags") != null ) {
+      for (String jobTag: builddata.getString("job_tags").trim().split(" ")) {
+        tags.add(jobTag);
+      }
     }
 
     return tags;
